@@ -39,9 +39,10 @@ client.once('ready', async () => {  // add async here
   console.log(`✦ Serving ${client.guilds.cache.size} server(s)`);
   console.log(`✦ ═══════════════════════════════════════════\n`);
 
+const { ActivityType } = require('discord.js');
   client.user.setActivity(
-    process.env.BOT_STATUS || 'with the baddies',
-    { type: 'PLAYING' }
+    process.env.BOT_STATUS || 'chosen baddies',
+    { type: ActivityType.Watching }
   );
 
   // Auto-expire timed purchases every 10 minutes
@@ -126,19 +127,20 @@ client.on('guildMemberAdd', async (member) => {
     giveWelcomeGift(member.id, member.guild.id);
 
     // Send DM welcome
-    const dmEmbed = new EmbedBuilder()
+const dmEmbed = new EmbedBuilder()
       .setColor(config.colors.pink)
-      .setTitle('✦ welcome to the baddies')
+      .setTitle(`˚ʚ you're in ɞ˚`)
       .setDescription(
-        `we're so glad you're here 🌸\n\n` +
-        `you've been gifted **50 gleam coins** to start exploring\n\n` +
-        `**quick start:**\n` +
-        `• \`/balance\` — see your coins & level\n` +
-        `• \`/shop\` — browse what's available\n` +
-        `• \`/daily\` — claim 80 coins (once per 24h)\n\n` +
-        `**bonus:** post an intro in #introductions for **+25 coins** ✨`
+        `⊹ ˖ welcome to chosen baddies ˖ ⊹\n\n` +
+        `ᝰ rosie dropped **50 gleam coins** in your account 💎\n\n` +
+        `⊹ ˖ ⋆｡‧ get started ‧｡⋆ ˖ ⊹\n\n` +
+        `ᝰ \`/balance\` — see your coins & level\n` +
+        `ᝰ \`/daily\` — claim 80 coins every 24h\n` +
+        `ᝰ \`/shop\` — spend your gleam coins\n` +
+        `ᝰ \`/vibe\` — check your vibe for today\n\n` +
+        `✦ post an intro for **+25 💎** · use \`/intro\` after posting`
       )
-      .setFooter({ text: 'chosen baddies' });
+      .setFooter({ text: '✦ chosen baddies · rosie' });
 
     await member.send({ embeds: [dmEmbed] }).catch(() => {});
 
