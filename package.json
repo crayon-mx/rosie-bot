@@ -1,0 +1,22 @@
+{
+  "name": "rosie-bot",
+  "version": "1.0.0",
+  "description": "Discord Bot — Leveling, Currency, Shop System",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "register-commands": "node src/registerCommands.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "better-sqlite3": "^9.4.3",
+    "dotenv": "^16.4.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
