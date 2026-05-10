@@ -97,7 +97,7 @@ async function handleLevelMilestone(userId, guildId, level, levelConfig, discord
       if (channel) {
         const embed = new EmbedBuilder()
           .setColor(config.colors.pink)
-          .setDescription(levelConfig.announcementText(`<@${userId}`))
+          .setDescription(levelConfig.announcementText(`<@${userId}>`))
           .setFooter({ text: '✦ chosen baddies · level milestone' });
 
         if (level === 60) {
