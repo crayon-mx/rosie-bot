@@ -344,7 +344,130 @@ const commands = [
       await interaction.editReply({ content: `✦ synced level role for **${target.username}**` });
     },
   },
+// ── /profile ──────────────────────────────
+  {
+    data: new SlashCommandBuilder()
+      .setName('profile')
+      .setDescription('View a member\'s full profile card')
+      .addUserOption(o =>
+        o.setName('user').setDescription('Whose profile').setRequired(false)
+      ),
 
+    async execute(interaction) {
+      const target      = interaction.options.getUser('user') || interaction.user;
+      const member      = coins.getMember(target.id, interaction.guildId);
+      const levelInfo   = levels.getLevelInfo(target.id, interaction.guildId);
+      const guildMember = await interaction.guild.members.fetch(target.id).catch(() => null);
+
+      const barLength = 14;
+      const filled    = Math.floor((levelInfo.percent / 100) * barLength);
+      const bar       = '▰'.repeat(filled) + '▱'.repeat(barLength - filled);
+
+      const joinedAt = guildMember?.joinedAt
+        ? `<t:${Math.floor(guildMember.joinedAt.getTime() / 1000)}:R>`
+        : 'unknown';
+
+      const embed = new EmbedBuilder()
+        .setColor(config.colors.blush)
+        .setTitle(`⊹ ${target.username} ⊹`)
+        .setThumbnail(target.displayAvatarURL({ size: 128 }))
+        .setDescription(
+          `⊹ ˖ ⋆｡‧ member card ‧｡⋆ ˖ ⊹\n\n` +
+          `ᝰ role  ›  **${levelInfo.roleName}**\n` +
+          `ᝰ joined  ›  ${joinedAt}\n\n` +
+          `⊹ ˖ ⋆｡‧ gleam economy ‧｡⋆ ˖ ⊹\n\n` +
+          `ᝰ coins  ›  **${member.gleam_coins.toLocaleString()} 💎**\n` +
+          `ᝰ lifetime  ›  **${member.total_earned.toLocaleString()} 💎**\n\n` +
+          `⊹ ˖ ⋆｡‧ level ‧｡⋆ ˖ ⊹\n\n` +
+          `ᝰ level  ›  **${levelInfo.level}**  ·  ${levelInfo.xp.toLocaleString()} xp\n` +
+          `\`${bar}\` ${levelInfo.percent}%`
+        )
+        .setFooter({ text: '✦ chosen baddies · member card' })
+        .setTimestamp();
+
+      await interaction.reply({ embeds: [embed] });
+    },
+  },
+// ── /aesthetic ────────────────────────────
+  {
+    data: new SlashCommandBuilder()
+      .setName('aesthetic')
+      .setDescription('Get your aesthetic reading for today'),
+
+    async execute(interaction) {
+      const aesthetics = [
+        { type: 'soft girl',     color: 0xf9b8cb, desc: 'blush tones · self-care rituals · hair bows · pink everything' },
+        { type: 'dark academia', color: 0x5a4a3f, desc: 'old books · rainy libraries · journals · poetry at 2am' },
+        { type: 'that girl',     color: 0xd4e8c0, desc: 'morning routines · clean girl energy · romanticizing the mundane' },
+        { type: 'y2k baddie',    color: 0xc084fc, desc: 'low rise · rhinestones · butterfly clips · iconic at all times' },
+        { type: 'alt girl',      color: 0x7c3aed, desc: 'dark liner · band tees · piercings · authentically herself' },
+        { type: 'cottagecore',   color: 0xa7c4a0, desc: 'wildflowers · linen · baking · chaos but make it cozy' },
+        { type: 'e-girl',        color: 0xe8547a, desc: 'heart clips · anime pfps · gaming · TikTok made for her' },
+        { type: 'coquette',      color: 0xf4a7c3, desc: 'lace · ballet · bows · red lips · delicate but dangerous' },
+        { type: 'clean girl',    color: 0xf0ece4, desc: 'glazed skin · minimalism · slick bun · gold jewelry · effortless' },
+        { type: 'downtown girl', color: 0x9ca3af, desc: 'city walks · coffee shops · vintage finds · cool without trying' },
+      ];
+
+      const pick = aesthetics[Math.floor(Math.random() * aesthetics.length)];
+
+      const embed = new EmbedBuilder()
+        .setColor(pick.color)
+        .setTitle(`⊹ aesthetic reading ⊹`)
+        .setDescription(
+          `**${interaction.user.username}**\n\n` +
+          `today you're giving  ›  **${pick.type}**\n\n` +
+          `˖ ✦ ˖ *${pick.desc}* ˖ ✦ ˖`
+        )
+        .setFooter({ text: '✦ chosen baddies · aesthetic readings' });
+
+      await interaction.reply({ embeds: [embed] });
+    },
+  },
+// ── /rep ──────────────────────────────────
+  {
+    data: new SlashCommandBuilder()
+      .setName('rep')
+      .setDescription('Give rep to a member — once every 12 hours')
+      .addUserOption(o =>
+        o.setName('user').setDescription('Who to rep').setRequired(true)
+      ),
+
+    async execute(interaction) {
+      const target = interaction.options.getUser('user');
+
+      if (target.bot)                        return interaction.reply({ content: `ᝰ can't rep a bot 🌸`, ephemeral: true });
+      if (target.id === interaction.user.id) return interaction.reply({ content: `ᝰ can't rep yourself 🌸`, ephemeral: true });
+
+      const cooldownKey = `rep_${interaction.user.id}`;
+      const now         = Math.floor(Date.now() / 1000);
+      const cooldownRow = db.getXPCooldown.get(cooldownKey);
+      const TWELVE_H    = 12 * 3600;
+
+      if (cooldownRow && (now - cooldownRow.last_xp) < TWELVE_H) {
+        const remaining = TWELVE_H - (now - cooldownRow.last_xp);
+        const hrs  = Math.floor(remaining / 3600);
+        const mins = Math.ceil((remaining % 3600) / 60);
+        return interaction.reply({
+          content: `ᝰ already repped someone — come back in **${hrs}h ${mins}m** 🌙`,
+          ephemeral: true,
+        });
+      }
+
+      db.logXPCooldown.run(cooldownKey, now, now);
+      coins.awardEventCoins(target.id, interaction.guildId, 10, `rep_from_${interaction.user.id}`);
+
+      const embed = new EmbedBuilder()
+        .setColor(config.colors.lilac)
+        .setDescription(
+          `${interaction.user} repped ${target} ˖ ✦ ˖\n\n` +
+          `ᝰ ${target.username} got **+10 💎** for the rep 🌸`
+        )
+        .setFooter({ text: '✦ chosen baddies · rep · 12h cooldown' });
+
+      await interaction.reply({ embeds: [embed] });
+    },
+  },
+  
 ];
 
 module.exports = commands;
