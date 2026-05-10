@@ -1,40 +1,28 @@
 const db = require('./database');
 const config = require('./config');
 
-// ══════════════════════════════════════════
+// ═══════��══════════════════════════════════
 // EARN COINS — All with caps & cooldowns
 // ══════════════════════════════════════════
 
-/**
- * Award coins from chat messages
- * PROTECTIONS:
- * - 60s cooldown between messages
- * - Daily cap per source (150 chat max)
- * - Hard daily cap across ALL sources (230 total)
- * - Resets at midnight UTC
- */
 function awardChatCoins(userId, guildId) {
   const member = db.ensureMember(userId, guildId);
   const now = Math.floor(Date.now() / 1000);
   const today = db.todayStr();
 
-  // Reset if new day
   if (member.daily_reset_date !== today) {
     db.resetDailyChat.run(0, today, userId, guildId);
     member.daily_coins_today = 0;
   }
 
-  // Check 60s cooldown
   if (now - member.last_message < config.coins.CHAT_COOLDOWN_SECONDS) {
     return { awarded: 0, reason: 'cooldown' };
   }
 
-  // Check daily chat cap (150)
   if (member.daily_coins_today >= config.coins.CHAT_DAILY_CAP) {
     return { awarded: 0, reason: 'chat_cap' };
   }
 
-  // Check hard daily cap (230)
   if (member.daily_coins_today >= config.coins.TOTAL_DAILY_CAP) {
     return { awarded: 0, reason: 'total_cap' };
   }
@@ -47,17 +35,12 @@ function awardChatCoins(userId, guildId) {
   return { awarded: amount, reason: 'ok' };
 }
 
-/**
- * Daily command — 80 coins, once per 24 hours
- * PROTECTION: Unix timestamp-based (prevents midnight exploit)
- */
 function claimDaily(userId, guildId) {
   const member = db.ensureMember(userId, guildId);
   const now = Math.floor(Date.now() / 1000);
   const today = db.todayStr();
   const TWENTY_FOUR_HOURS = 24 * 60 * 60;
 
-  // 24h cooldown check (NOT day-based, timestamp-based)
   const timeSinceClaim = now - member.daily_claimed;
   if (member.daily_claimed > 0 && timeSinceClaim < TWENTY_FOUR_HOURS) {
     const nextClaim = member.daily_claimed + TWENTY_FOUR_HOURS;
@@ -66,7 +49,6 @@ function claimDaily(userId, guildId) {
     return { success: false, hoursLeft, minsLeft };
   }
 
-  // Reset chat daily counter if needed
   if (member.daily_reset_date !== today) {
     db.resetDailyChat.run(0, today, userId, guildId);
   }
@@ -82,28 +64,18 @@ function claimDaily(userId, guildId) {
   };
 }
 
-/**
- * Award coins for events (no daily cap)
- * STAFF/SYSTEM USE ONLY — genuine milestones
- */
 function awardEventCoins(userId, guildId, amount, reason) {
   db.ensureMember(userId, guildId);
   db.addCoins.run(amount, amount, userId, guildId);
   return { awarded: amount, reason };
 }
 
-/**
- * Welcome gift on join
- */
 function giveWelcomeGift(userId, guildId) {
   db.ensureMember(userId, guildId);
   db.addCoins.run(config.coins.WELCOME_GIFT, config.coins.WELCOME_GIFT, userId, guildId);
   return config.coins.WELCOME_GIFT;
 }
 
-/**
- * Intro bonus — one time only
- */
 function claimIntroBonus(userId, guildId) {
   const member = db.ensureMember(userId, guildId);
   if (member.intro_posted === 1) {
@@ -118,9 +90,6 @@ function claimIntroBonus(userId, guildId) {
 // SPEND COINS
 // ══════════════════════════════════════════
 
-/**
- * Spend coins — validates balance first
- */
 function spendCoins(userId, guildId, amount) {
   const member = db.ensureMember(userId, guildId);
 
@@ -141,7 +110,7 @@ function spendCoins(userId, guildId, amount) {
 
 // ══════════════════════════════════════════
 // GETTERS
-// ══���═══════════════════════════════════════
+// ══════════════════════════════════════════
 
 function getMember(userId, guildId) {
   return db.ensureMember(userId, guildId);
@@ -160,29 +129,19 @@ function getLeaderboard(guildId) {
 // STAFF TOOLS
 // ══════════════════════════════════════════
 
-/**
- * Staff: Add coins (logged for audit)
- */
 function staffAddCoins(staffId, targetId, guildId, amount, reason) {
   if (amount < 1) return 0;
-  
   db.ensureMember(targetId, guildId);
   db.addCoins.run(amount, amount, targetId, guildId);
   db.logStaffAction.run(staffId, targetId, 'add_coins', amount, reason || 'staff grant');
-  
   return db.getMember.get(targetId, guildId).gleam_coins;
 }
 
-/**
- * Staff: Remove coins (logged for audit)
- */
 function staffRemoveCoins(staffId, targetId, guildId, amount, reason) {
   if (amount < 1) return 0;
-  
   db.ensureMember(targetId, guildId);
   db.removeCoins.run(amount, targetId, guildId);
   db.logStaffAction.run(staffId, targetId, 'remove_coins', amount, reason || 'staff deduct');
-  
   return db.getMember.get(targetId, guildId).gleam_coins;
 }
 

@@ -4,9 +4,6 @@ const { spendCoins, awardEventCoins } = require('./coins');
 const { getLevelFromXP } = require('./levels');
 const { EmbedBuilder } = require('discord.js');
 
-/**
- * Get full shop listing
- */
 function getShopListing(userId, guildId) {
   const member = db.ensureMember(userId, guildId);
   const level = getLevelFromXP(member.xp);
@@ -23,15 +20,6 @@ function getShopListing(userId, guildId) {
   };
 }
 
-/**
- * Purchase item — FULL VALIDATION
- * Checks:
- * - Item exists
- * - Level requirement met
- * - Balance sufficient
- * - Cooldown not active (mystery box)
- * - Only then spends coins
- */
 async function purchaseItem(userId, guildId, itemId, discordMember, guild, client) {
   const item = config.shop.find(i => i.id === itemId);
   if (!item) return { success: false, error: 'item_not_found' };
@@ -39,7 +27,6 @@ async function purchaseItem(userId, guildId, itemId, discordMember, guild, clien
   const member = db.ensureMember(userId, guildId);
   const level = getLevelFromXP(member.xp);
 
-  // Level check
   if (level < (item.minLevel || 0)) {
     return {
       success: false,
@@ -49,7 +36,6 @@ async function purchaseItem(userId, guildId, itemId, discordMember, guild, clien
     };
   }
 
-  // Mystery box cooldown check
   if (item.hasCooldown) {
     const now = Math.floor(Date.now() / 1000);
     const cooldownSeconds = config.coins.MYSTERY_BOX_COOLDOWN_HOURS * 3600;
@@ -61,7 +47,6 @@ async function purchaseItem(userId, guildId, itemId, discordMember, guild, clien
     }
   }
 
-  // Balance check and spend
   const spend = spendCoins(userId, guildId, item.cost);
   if (!spend.success) {
     return {
@@ -73,13 +58,11 @@ async function purchaseItem(userId, guildId, itemId, discordMember, guild, clien
     };
   }
 
-  // Log purchase
   const expiresAt = item.duration > 0
     ? Math.floor(Date.now() / 1000) + item.duration
     : 0;
   db.logPurchase.run(userId, itemId, item.cost, expiresAt);
 
-  // Handle mystery box
   if (itemId === 'mystery_box') {
     const now = Math.floor(Date.now() / 1000);
     db.updateMysteryBox.run(now, db.monthStr(), userId, guildId);
@@ -97,9 +80,6 @@ async function purchaseItem(userId, guildId, itemId, discordMember, guild, clien
   };
 }
 
-/**
- * Mystery box roll — weighted random
- */
 function rollMysteryBox(userId, guildId, discordMember, guild, client) {
   const outcomes = config.mysteryBoxOutcomes;
   const totalWeight = outcomes.reduce((sum, o) => sum + o.weight, 0);
@@ -114,7 +94,6 @@ function rollMysteryBox(userId, guildId, discordMember, guild, client) {
     }
   }
 
-  // Apply outcome
   if (chosen.type === 'coins') {
     awardEventCoins(userId, guildId, chosen.amount, 'mystery_box');
   }
@@ -122,25 +101,15 @@ function rollMysteryBox(userId, guildId, discordMember, guild, client) {
   return chosen;
 }
 
-/**
- * Expire timed purchases
- * Called every 10 minutes by main bot
- */
 function expireTimedPurchases() {
   db.expirePurchases.run();
 }
 
-/**
- * Check if member has active purchase
- */
 function hasActivePurchase(userId, itemId) {
   const purchase = db.getActivePurchase.get(userId, itemId);
   return !!purchase;
 }
 
-/**
- * Build shop embed for display
- */
 function buildShopEmbed(userId, guildId) {
   const { items, balance, level } = getShopListing(userId, guildId);
 

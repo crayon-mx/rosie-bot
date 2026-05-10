@@ -2,7 +2,6 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 
-// Create data directory if it doesn't exist
 const dataDir = path.join(__dirname, '../../data');
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
@@ -11,17 +10,11 @@ if (!fs.existsSync(dataDir)) {
 
 const db = new Database(path.join(dataDir, 'rosie.db'));
 
-// Performance settings
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 db.pragma('synchronous = NORMAL');
 
-// ══════════════════════════════════════════
-// CREATE TABLES
-// ══════════════════════════════════════════
-
 db.exec(`
-  -- Members table
   CREATE TABLE IF NOT EXISTS members (
     user_id                TEXT NOT NULL,
     guild_id               TEXT NOT NULL,
@@ -66,15 +59,10 @@ db.exec(`
     logged_at              INTEGER DEFAULT (unixepoch())
   );
 
-  -- Indexes for speed
   CREATE INDEX IF NOT EXISTS idx_members_guild ON members(guild_id);
   CREATE INDEX IF NOT EXISTS idx_purchases_user ON purchases(user_id);
   CREATE INDEX IF NOT EXISTS idx_purchases_active ON purchases(active, expires_at);
 `);
-
-// ══════════════════════════════════════════
-// PREPARED STATEMENTS (Speed & Safety)
-// ══════════════════════════════════════════
 
 const getMember = db.prepare(`
   SELECT * FROM members WHERE user_id = ? AND guild_id = ?
@@ -172,10 +160,6 @@ const getLeaderboard = db.prepare(`
   ORDER BY gleam_coins DESC LIMIT 10
 `);
 
-// ══════════════════════════════════════════
-// EXPORTS
-// ══════════════════════════════════════════
-
 module.exports = {
   db,
   getMember,
@@ -197,18 +181,15 @@ module.exports = {
   updateIntroPosted,
   getLeaderboard,
 
-  // Helper: Ensure member exists
   ensureMember(userId, guildId) {
     upsertMember.run(userId, guildId, Math.floor(Date.now() / 1000));
     return getMember.get(userId, guildId);
   },
 
-  // Helper: Today's date string
   todayStr() {
     return new Date().toISOString().slice(0, 10);
   },
 
-  // Helper: Current month string
   monthStr() {
     return new Date().toISOString().slice(0, 7);
   }

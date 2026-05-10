@@ -4,18 +4,18 @@ module.exports = {
   // COIN ECONOMY (NO EXPLOITS — All capped)
   // ══════════════════════════════════════════
   coins: {
-    WELCOME_GIFT: 50,              // On join
-    DAILY_AMOUNT: 80,              // /daily command
-    CHAT_PER_MESSAGE: 3,           // Per message
-    CHAT_DAILY_CAP: 150,           // Max from chat per day
-    TOTAL_DAILY_CAP: 230,          // Hard cap ALL sources per day
-    CHAT_COOLDOWN_SECONDS: 60,     // Cooldown between messages
-    INTRO_BONUS: 25,               // One-time intro bonus
-    MYSTERY_BOX_COOLDOWN_HOURS: 72,// Time between mystery boxes
+    WELCOME_GIFT: 50,
+    DAILY_AMOUNT: 80,
+    CHAT_PER_MESSAGE: 3,
+    CHAT_DAILY_CAP: 150,
+    TOTAL_DAILY_CAP: 230,
+    CHAT_COOLDOWN_SECONDS: 60,
+    INTRO_BONUS: 25,
+    MYSTERY_BOX_COOLDOWN_HOURS: 72,
   },
 
   // ══════════════════════════════════════════
-  // LEVEL MILESTONES (MEE6 formula)
+  // LEVEL MILESTONES
   // ══════════════════════════════════════════
   levels: [
     {
@@ -48,7 +48,7 @@ module.exports = {
       coinBonus: 200,
       announcement: true,
       announcementText: (user) =>
-        `${user} is now level 25. yeah, she's *that* girl 🖤`,
+        `${user} is now level 25. yeah, she\'s *that* girl 🖤`,
     },
     {
       level: 40,
@@ -57,7 +57,7 @@ module.exports = {
       coinBonus: 300,
       announcement: true,
       announcementText: (user) =>
-        `${user} reached level 40. she stuck around. respect ����`,
+        `${user} reached level 40. she stuck around. respect 👑`,
     },
     {
       level: 60,
@@ -71,7 +71,7 @@ module.exports = {
   ],
 
   // ══════════════════════════════════════════
-  // SHOP ITEMS (All with validation)
+  // SHOP ITEMS
   // ══════════════════════════════════════════
   shop: [
     {
@@ -168,7 +168,6 @@ module.exports = {
     },
   ],
 
-  // Mystery box outcomes (weighted random)
   mysteryBoxOutcomes: [
     { type: 'coins', amount: 50,  weight: 30, label: '50 gleam coins 💎' },
     { type: 'coins', amount: 150, weight: 20, label: '150 gleam coins 💎' },
@@ -179,7 +178,6 @@ module.exports = {
     { type: 'shoutout', weight: 10, label: 'free shoutout 📢' },
   ],
 
-  // Colors for embeds
   colors: {
     pink: 0xe8547a,
     lilac: 0xc9a7e8,

@@ -3,19 +3,14 @@ const config = require('./config');
 const { awardEventCoins } = require('./coins');
 const { EmbedBuilder } = require('discord.js');
 
-// XP per message (MEE6 formula)
 const XP_MIN = 15;
 const XP_MAX = 25;
-const XP_COOLDOWN = 60; // seconds
+const XP_COOLDOWN = 60;
 
 function randomXP() {
   return Math.floor(Math.random() * (XP_MAX - XP_MIN + 1)) + XP_MIN;
 }
 
-/**
- * Calculate level from total XP (MEE6 formula)
- * Level N requires: 5/6 * N * (2N^2 + 27N + 91) total XP
- */
 function xpForLevel(level) {
   return Math.floor((5 / 6) * level * (2 * level * level + 27 * level + 91));
 }
@@ -33,16 +28,11 @@ function xpToNextLevel(xp) {
   return xpForLevel(currentLevel + 1) - xp;
 }
 
-/**
- * Award XP for a message
- * PROTECTION: 60s cooldown enforced
- */
 async function awardMessageXP(member, guild, client) {
   const userId = member.id;
   const guildId = guild.id;
   const now = Math.floor(Date.now() / 1000);
 
-  // Check cooldown
   const cooldown = db.getXPCooldown.get(userId);
   if (cooldown && (now - cooldown.last_xp) < XP_COOLDOWN) {
     return { xpAwarded: 0, leveledUp: false };
@@ -73,22 +63,16 @@ async function awardMessageXP(member, guild, client) {
   return { xpAwarded: xpGain, leveledUp, newLevel, oldLevel, levelConfig };
 }
 
-/**
- * Handle level milestone — roles, coins, announcements
- */
 async function handleLevelMilestone(userId, guildId, level, levelConfig, discordMember, guild, client) {
-  // Award coins
   if (levelConfig.coinBonus > 0) {
     awardEventCoins(userId, guildId, levelConfig.coinBonus, `level_${level}_milestone`);
   }
 
-  // Assign role
   try {
     const newRoleId = process.env[levelConfig.roleEnv];
     if (newRoleId) {
       const newRole = guild.roles.cache.get(newRoleId);
       if (newRole && discordMember) {
-        // Remove other level roles
         const levelRoleIds = config.levels
           .map(l => process.env[l.roleEnv])
           .filter(Boolean);
@@ -99,7 +83,6 @@ async function handleLevelMilestone(userId, guildId, level, levelConfig, discord
           }
         }
 
-        // Add new role
         await discordMember.roles.add(newRole).catch(() => {});
       }
     }
@@ -107,7 +90,6 @@ async function handleLevelMilestone(userId, guildId, level, levelConfig, discord
     console.error(`Error assigning level role:`, err.message);
   }
 
-  // Post announcement
   if (levelConfig.announcement && levelConfig.announcementText) {
     const channelId = process.env.CHANNEL_ANNOUNCEMENTS;
     if (channelId) {
@@ -115,7 +97,7 @@ async function handleLevelMilestone(userId, guildId, level, levelConfig, discord
       if (channel) {
         const embed = new EmbedBuilder()
           .setColor(config.colors.pink)
-          .setDescription(levelConfig.announcementText(`<@${userId}>`))
+          .setDescription(levelConfig.announcementText(`<@${userId}`))
           .setFooter({ text: '✦ chosen baddies · level milestone' });
 
         if (level === 60) {
@@ -127,13 +109,12 @@ async function handleLevelMilestone(userId, guildId, level, levelConfig, discord
     }
   }
 
-  // Send DM
   if (discordMember) {
     const embed = new EmbedBuilder()
       .setColor(config.colors.pink)
       .setTitle(`✦ level ${level}`)
       .setDescription(
-        `you're now **${levelConfig.roleName}** 🌸\n\n` +
+        `you\'re now **${levelConfig.roleName}** 🌸\n\n` +
         (levelConfig.coinBonus > 0 ? `you earned **${levelConfig.coinBonus} gleam coins** ✨` : '')
       )
       .setFooter({ text: 'chosen baddies' });
@@ -142,9 +123,6 @@ async function handleLevelMilestone(userId, guildId, level, levelConfig, discord
   }
 }
 
-/**
- * Get member's level info
- */
 function getLevelInfo(userId, guildId) {
   const member = db.ensureMember(userId, guildId);
   const level = getLevelFromXP(member.xp);
@@ -165,9 +143,6 @@ function getLevelInfo(userId, guildId) {
   };
 }
 
-/**
- * Force-sync member's level role
- */
 async function syncLevelRole(discordMember, guild) {
   const member = db.ensureMember(discordMember.id, guild.id);
   const level = getLevelFromXP(member.xp);
