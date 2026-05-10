@@ -22,7 +22,17 @@ const client = new Client({
 // BOT READY EVENT
 // ══════════════════════════════════════════
 
-client.once('ready', () => {
+client.once('ready', async () => {  // add async here
+  // ── REGISTER COMMANDS ON STARTUP ──
+  const { REST, Routes } = require('discord.js');
+  const rest = new REST().setToken(process.env.DISCORD_TOKEN);
+  const commandData = commands.map(c => c.data.toJSON());
+  await rest.put(
+    Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
+    { body: commandData }
+  ).then(() => console.log('✦ Slash commands registered'))
+   .catch(e => console.error('❌ Command registration failed:', e.message));
+  // ── END REGISTER ──
   console.log(`\n✦ ═══════════════════════════════════════════`);
   console.log(`✦ Bot: ${client.user.username}#${client.user.discriminator}`);
   console.log(`✦ Status: ONLINE`);
